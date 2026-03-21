@@ -39,7 +39,7 @@ Pour se rapprocher d'une architecture de type entreprise :
 | 10   | FA1/1, FA1/2   | —           | —           | —    |
 | 20   | FA1/3, FA1/4   | —           | —           | —    |
 | 30   | —              | FA1/1–4     | —           | —    |
-| 40   | —              | —           | FA1/1–4     | —    |
+| 40   | —              | —           | FA1/0–4     | —    |
 | 50   | —              | —           | —           | —    |
 | 90   | —              | —           | —           | —    |
 | 99   | —              | —           | —           | —    |
