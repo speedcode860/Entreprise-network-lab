@@ -143,6 +143,26 @@ show spanning-tree brief
 
 Vous pouvez retapez cette commande pour verifier le spanning tree , et ci tout est bien configure alors ESW3 est le root bridge et la liason entre ESW1 et ESW2 est bloquez , vous pouvez verifiez cette informations dans les les commandes de verifications du spanning tree.
 
+### Isolation des ports
+
+Par mesure de securite l'on va mettre les ports non utilise dans le vlan inutilise notamment le vla poubelle , plutot originale comme nom :)
+
+Repertorie les ports non utilise ( attention puisque l'on utilise un routeur avec un module switch les port fa0/x sont des ports de routeur et non des ports de commutateur donc on peut lesignorer)
+
+Rerpertorier les ports commutauer non tuilise puis les agffecter auxx vlans inutilise
+
+conf t
+int range fa1/x - y
+shutdown
+switchport mode access
+switchport acces vlan 99
+
+A la fin vous avez une sortie de ce type 
+
+Sortie de ESW1
+
+![TOPOLOGY1](image/result4.PNG)
+
 
 
 
