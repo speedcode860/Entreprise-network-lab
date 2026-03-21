@@ -72,14 +72,14 @@ ip a
 
 Remarquez que votre machine a bien une ip
 
-![TOPOLOGY1](image/rseult1.PNG)
+![TOPOLOGY1](image/result1.PNG)
 
 Faites la meme chose pour PC-test2 mais avec l'adresse 192.168.10.11/24
 
 Effectuez un ping sur l'une des machines pour tester la connectivite 
 CA PING!!!!!!!!!!!!!!!!!!!!
 
-![TOPOLOGY1](image/rseult2.PNG)
+![TOPOLOGY1](image/result2.PNG)
 
 # Configuration de Etherchannel et du STP
 
@@ -117,7 +117,7 @@ show etherchannel summary
 
 Exemple de sortie pour ESW1
 
-![TOPOLOGY1](image/rseult2.PNG)
+![TOPOLOGY1](image/result3.PNG)
 
 Verifiez pour les autres liens etherchannel , rassurez que la sortie est conforme a la table en dessus.
 
