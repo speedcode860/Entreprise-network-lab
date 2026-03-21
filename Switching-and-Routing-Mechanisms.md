@@ -356,13 +356,13 @@ Vérification de la table de routage :
 ESW3# show ip route
 ```
 
-![Result Routing Final](image/result6.PNG)
+![Result Routing Final](image/result7.PNG)
 
 ---
 
 ## ✅ Test 2 — Connectivité inter-VLAN
 
-![Topology Test 2](image/result7.PNG)
+![Topology Test 2](image/topology3.PNG)
 
 Ajoutez deux nouvelles machines Alpine Linux dans la topologie :
 
