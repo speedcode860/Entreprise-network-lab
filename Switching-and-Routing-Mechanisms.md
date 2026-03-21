@@ -1,4 +1,4 @@
-![TOPOLOGY1](topology1.PNG)
+![TOPOLOGY1](image/topology1.PNG)
 
 # Description
 
