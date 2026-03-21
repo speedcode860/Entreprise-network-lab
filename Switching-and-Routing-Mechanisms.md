@@ -59,7 +59,7 @@ A ce stade les utilisateur du meme vlan doivent pouvoir communiquer
 Ajouter deux machines alpines linux dans l4espace de travail
 Connecter les machines aux switch de facon a ce que les machines elles soient sur le meme vlans 
 
-![TOPOLOGY1](image/topology1.PNG)
+![TOPOLOGY1](image/topology2.PNG)
 
 PC-test1 et pc-test 2 sont connecte chacun a  fa1/1 et fa1/2 de ESW1
 Demarrez les machines et lances le terminal
