@@ -6,9 +6,9 @@ Pour realiser notre reseaqu nous allons d'abord configurer le traffic de donnes 
 entre eux.Pour se rapprocher d'une architecture de type entreprise , il y a des boucles reseaux et des liens etherchannel afin doptimiser le flux , le routage intervaln est prefere a celui du routage on stick , 
 grace a sa capacite de routage plus efficace.
 
-# Table des vlans
-
 # Configuration des vlans
+
+## Table des vlans
 
 ## Configuration du Switch ESW1
 
@@ -162,6 +162,100 @@ A la fin vous avez une sortie de ce type
 Sortie de ESW1
 
 ![TOPOLOGY1](image/result4.PNG)
+
+**N'oubliez de faire ectte mesure de securite  pour le switch ESW4 ;)**
+
+# Configuration du rooutage intervlan
+
+La methode de routage par le switch de niveau trpoios est prefere ici car cest celle qui est utilise dans la plus part des entreprise , en effet le routage on stick a une limte de 50 vlans , ce qui peut tres vitent etre atteint.
+
+# Tableau de vlans
+
+Selon la table de vlan ci dessus nous allons creer les interfaces virtuelles de notre switch de niveau 3 . Vous remarquerez que il n y a pas d'interface de svi qui correspond a la dmz tout simplemet parce que la dmz etant sur un autre sous reseaule trafic pour la dmz va etre achemiimne vers le firewall tout simplement a l'aide de la route par defaut .
+
+Commande a taper pour le vlan 10
+
+int vlan 10
+description Gateway vlan 10
+ip add 192.168.10.1 255.255.255.0
+no shutdown
+exit
+
+Faire de meme pour le reste de vlan , qui figurent dans le tableau ci dessus 
+
+Ensuite dans le mode de config globale active le routage avec :
+
+ip routing 
+
+# Verification 
+
+Entrez :
+show ip int brief | section Vlan
+
+Vous devez avoir cette sortie 
+
+![TOPOLOGY1](image/result5.PNG)
+
+Faut pas faire attention a la ligne vlan40 , jai fait une petite erreur hihiii
+
+Maintenant l'on va verifier la table de routage
+
+entrer :
+
+show ip route
+
+on a cette sortie
+
+![TOPOLOGY1](image/result6.PNG)
+
+On peut remarquet que il n y a pas de route vers le reseau dmz cest problematique , car ce reseau va herberger nois services web et dns et il faudra bien que nos hotes de notre sous reseau communiquent avec eux . Pour ce faire on va donc ajouter une route par defaut qui va rediger tout les pquets "hors vlan" de notre sous reseauvers le firewall
+
+## Configuration de linterface connecte au firewall et de la route par defaut
+
+Table d'adressage sous reseaux wan 1
+
+
+dans Esw3 entrz 
+
+conf t
+int fa0/0
+ip add 10.0.0.1 255.255.255.0
+no shutdown
+exit
+ip route 0.0.0.0 0.0.0.0 fa0/0
+
+Reverifions la table de routage 
+
+![TOPOLOGY1](image/result6.PNG)
+
+Parfait il ne nous reste plus qu'a configurer le firewall pour router les paquets vers la DMZ >Mais avant ca reverifions notre reseaux avec quelques
+
+
+# Test
+
+![TOPOLOGY1](image/result7.PNG)
+
+Ajoutez d'autres machines Alpines Linux dans notre architecture vous pouvez voir j'ai ajoute pc3 et pc4 
+Pc-test3 est connecte au port fa1/3 de notre ESW1 et il a pour ip 192.168.20.10
+Pc-test4 est connecte au port fa1/1 de notre ESW2 et il a pour ip 192.168.30.10
+
+Sur chaque machine ajoutez la gateway , sinon pas de routage.
+Voici la commande : ip route add default via 192.168.x.1 
+Avex x , l'id du vlan
+
+Reffectuez de pings entre les machines .Si tout est bien configure vos ping devraient passer
+
+![TOPOLOGY1](image/result8.PNG)
+
+Dans mon exmeple je ping PC-test3 et Pc-test4.
+
+
+
+
+
+
+
+
 
 
 
