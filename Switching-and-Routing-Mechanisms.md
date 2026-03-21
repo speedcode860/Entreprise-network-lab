@@ -1,271 +1,416 @@
-![TOPOLOGY1](image/topology1.PNG)
+# 🏗️ Architecture Réseau Entreprise — Lab GNS3
 
-# Description
+> Mise en place d'une infrastructure réseau d'entreprise avec VLANs, EtherChannel, Spanning Tree, routage inter-VLAN et pare-feu FortiGate.
 
-Pour realiser notre reseaqu nous allons d'abord configurer le traffic de donnes , s'assurer que les sous reseau peuvent communiquer
-entre eux.Pour se rapprocher d'une architecture de type entreprise , il y a des boucles reseaux et des liens etherchannel afin doptimiser le flux , le routage intervaln est prefere a celui du routage on stick , 
-grace a sa capacite de routage plus efficace.
+![Topology](image/topology1.PNG)
 
-# Configuration des vlans
+---
 
-## Table des vlans
+## 📋 Table des matières
 
-## Configuration du Switch ESW1
+- [Description](#-description)
+- [Configuration des VLANs](#-configuration-des-vlans)
+- [Configuration EtherChannel & STP](#-configuration-etherchannel--stp)
+- [Routage inter-VLAN](#-configuration-du-routage-inter-vlan)
+- [Configuration FortiGate](#-configuration-du-pare-feu-fortigate)
+- [Tests de connectivité](#-tests-de-connectivité)
 
-### Creation des Vlans 
-Vu que c'est un routeur avec un module de commutateur lesw commandes sont un peu differentes.
-Sur la ligne de commande entrer :
+---
 
-vlan database
-vlan 10 name Users
-vlan 20 name Admin
-vlan 30 name Servers
-vlan 40 name DMZ
-vlan 50 name MGMT
-vlan 90 name Natif
-vlan 99 name Poubelle
-end
+## 📖 Description
 
-### Verification de la creation des vlan
+Pour réaliser ce réseau, nous allons d'abord configurer le trafic de données et nous assurer que les sous-réseaux peuvent communiquer entre eux.
 
-show vlan-switch brief
+Pour se rapprocher d'une architecture de type entreprise :
+- 🔁 Des **boucles réseau** sont présentes et gérées par le Spanning Tree Protocol
+- 🔗 Des **liens EtherChannel** optimisent le flux réseau
+- 🚦 Le **routage inter-VLAN par switch de niveau 3** est préféré au routage on-stick, pour sa meilleure efficacité et sa capacité à gérer plus de 50 VLANs
 
-### Affectation des interfaces aux vlans
+---
 
-conf t
-int range fa1/1 - 2
-switchport mode access
-switchport access vlan 10
-int range fa1/3-4
-switchport mode access 
-switchport access vlan 20
-end
+## 🗂️ Configuration des VLANs
 
-### Verification de l'affectation des interfaces
+### Table des VLANs
 
-show vlan-switch brief
+# 🗂️ Résumé VLAN / Interfaces par Switch (sans SVI)
 
-## Configuration du Switch ESW2 et ESW4
++--------+---------------------------+---------------------------+------------------------------+------------------------------+
+| VLAN   | ESW1                     | ESW2                     | ESW4                        | ESW3                         |
++--------+---------------------------+---------------------------+------------------------------+------------------------------+
+| 10     | FA1/1, FA1/2             | —                         | —                            | —                            |
+| 20     | FA1/3, FA1/4             | —                         | —                            | —                            |
+| 30     | —                         | FA1/1–4                   | —                            | —                            |
+| 40     | —                         | —                         | FA1/1–4                      | —                            |
+| 50     | —                         | —                         | —                            | —                            |
+| 90     | —                         | —                         | —                            | —                            |
+| 99     | Ports inutilisés         | Ports inutilisés         | Ports inutilisés             | Ports inutilisés             |
++--------+---------------------------+---------------------------+------------------------------+------------------------------+
 
-Repetez la meme procedure selon la table de vlan
+---
 
-## Configuration du Switch ESW3
+### ⚙️ Configuration du Switch ESW1
 
-Creez juste les vlans 
+> ⚠️ **Important** : ESW1 est un routeur Cisco avec module NM-16ESW. Les commandes de création de VLANs sont différentes d'un switch classique — on utilise `vlan database` depuis le mode exec privilégié.
 
-# Test 
+#### 1. Création des VLANs
 
-A ce stade les utilisateur du meme vlan doivent pouvoir communiquer 
-Ajouter deux machines alpines linux dans l4espace de travail
-Connecter les machines aux switch de facon a ce que les machines elles soient sur le meme vlans 
+```
+ESW1# vlan database
+ESW1(vlan)# vlan 10 name Users
+ESW1(vlan)# vlan 20 name Admin
+ESW1(vlan)# vlan 30 name Servers
+ESW1(vlan)# vlan 40 name DMZ
+ESW1(vlan)# vlan 50 name MGMT
+ESW1(vlan)# vlan 90 name Natif
+ESW1(vlan)# vlan 99 name Poubelle
+ESW1(vlan)# exit
+```
 
-![TOPOLOGY1](image/topology2.PNG)
+#### 2. Vérification
 
-PC-test1 et pc-test 2 sont connecte chacun a  fa1/1 et fa1/2 de ESW1
-Demarrez les machines et lances le terminal
+```
+ESW1# show vlan-switch brief
+```
 
-## Configurez l'addressage
+#### 3. Affectation des interfaces aux VLANs
 
-Sur la PC-test1 , tapez 
+```
+ESW1# configure terminal
+ESW1(config)# interface range fastEthernet 1/1 - 2
+ESW1(config-if-range)# switchport mode access
+ESW1(config-if-range)# switchport access vlan 10
+ESW1(config-if-range)# exit
+ESW1(config)# interface range fastEthernet 1/3 - 4
+ESW1(config-if-range)# switchport mode access
+ESW1(config-if-range)# switchport access vlan 20
+ESW1(config-if-range)# end
+```
+
+#### 4. Vérification de l'affectation
+
+```
+ESW1# show vlan-switch brief
+```
+
+---
+
+### ⚙️ Configuration des Switchs ESW2 et ESW4
+
+Répétez la même procédure en vous basant sur la table des VLANs ci-dessus, en adaptant les numéros d'interfaces et de VLANs selon votre table d'affectation.
+
+---
+
+### ⚙️ Configuration du Switch ESW3
+
+Sur ESW3, **créez uniquement les VLANs** (sans affectation de ports d'accès), car ce switch de niveau 3 sera dédié au routage inter-VLAN.
+
+```
+ESW3# vlan database
+ESW3(vlan)# vlan 10 name Users
+ESW3(vlan)# vlan 20 name Admin
+ESW3(vlan)# vlan 30 name Servers
+ESW3(vlan)# vlan 40 name DMZ
+ESW3(vlan)# vlan 50 name MGMT
+ESW3(vlan)# vlan 90 name Natif
+ESW3(vlan)# vlan 99 name Poubelle
+ESW3(vlan)# exit
+```
+
+---
+
+## ✅ Test 1 — Connectivité dans le même VLAN
+
+À ce stade, les machines du même VLAN doivent pouvoir communiquer entre elles.
+
+**Topologie de test :**
+
+![Topology Test](image/topology2.PNG)
+
+- **PC-test1** → connecté à `Fa1/1` de ESW1
+- **PC-test2** → connecté à `Fa1/2` de ESW1
+
+#### Configuration de l'adressage sur PC-test1
+
+```bash
 ip addr add 192.168.10.10/24 dev eth0
 ip a
+```
 
-Remarquez que votre machine a bien une ip
+![Result 1](image/result1.PNG)
 
-![TOPOLOGY1](image/result1.PNG)
+#### Configuration de l'adressage sur PC-test2
 
-Faites la meme chose pour PC-test2 mais avec l'adresse 192.168.10.11/24
+```bash
+ip addr add 192.168.10.11/24 dev eth0
+ip a
+```
 
-Effectuez un ping sur l'une des machines pour tester la connectivite 
-CA PING!!!!!!!!!!!!!!!!!!!!
+#### Test de connectivité
 
-![TOPOLOGY1](image/result2.PNG)
+```bash
+ping 192.168.10.11
+```
 
-# Configuration de Etherchannel et du STP
+🎉 **Si tout est bien configuré, le ping doit passer !**
 
-Maintenant l'on va configurer les liens etherchanell de notre reseau m, les liens etherchannel permettent doptimiser lutilisation des cables reseaux , ce qui va nous permettre davoir deux liens de 100mb ce qui est differnet attention de un lien de 200mb . 
+![Result 2](image/result2.PNG)
 
-## Table des etherchannels 
+---
 
-Attention pour eviter les erreurs veuyilles shutdown les ports que vous utilise lors de la creation des etherchannel puis les reallumez seulemtn a la fin 
+## 🔗 Configuration EtherChannel & STP
 
-### Configuration du port channel 1
+Les liens EtherChannel permettent d'**agréger plusieurs liens physiques** pour optimiser la bande passante et la redondance. Deux liens de 100 Mb/s agrégés ne forment pas un lien de 200 Mb/s — ils permettent une meilleure répartition de charge et une tolérance aux pannes.
 
-Conformement a la table voici les commandes a entrer sur ESW1 dans le mode de configuration globale  enfin de configurer le port-channel group 1
+### Table des EtherChannels
 
-int range fa1/7 - 8
-switchport
-shutdown
-channel-group 1 mode on
-exit
-int port-channel 1
-switchport mode trunk
-switchport trunk allowed vlan all
-switchport trunk native vlan 90 
-exit
-int range fa1/7 -  8
-no shutdown 
++----------------------+---------------------------+-------------------------------------------+
+| Port-Channel (ID)    | Switches concernés        | Interfaces utilisées                      |
++----------------------+---------------------------+-------------------------------------------+
+| Port-Channel 1       | ESW1 ↔ ESW2               | ESW1: fa1/7–fa1/8   | ESW2: fa1/7–fa1/8   |
+|                      |                           | 
++----------------------+---------------------------+-------------------------------------------+
+| Port-Channel 2       | ESW1 ↔ ESW3               | ESW1: fa1/5–fa1/6   | ESW3: fa1/5–fa1/6   |
++----------------------+---------------------------+-------------------------------------------+
+| Port-Channel 3       | ESW2 ↔ ESW3               | ESW2: fa1/5–fa1/6   | ESW3: fa1/7–fa1/8   |
++----------------------+---------------------------+-------------------------------------------+
 
-Pour configurer les aiutres ports channels la procedure reste la meme , il n y aque les parametre qui changent , faites attention a bien respecter les valeurs
-qui sont indiquer dans le tableaux sinon vous pouvez avoir des erreurs .
 
-### Verification de l'etherchannel 
+> ⚠️ **Attention** : Avant de créer les EtherChannels, **shutdown les ports concernés**, puis rallumez-les uniquement à la fin de la configuration.
 
-Pour verifier etherchannel tapez la commande 
+---
 
-show etherchannel summary
+### Configuration du Port-Channel 1 (sur ESW1)
 
-Exemple de sortie pour ESW1
+```
+ESW1(config)# interface range fastEthernet 1/7 - 8
+ESW1(config-if-range)# switchport
+ESW1(config-if-range)# shutdown
+ESW1(config-if-range)# channel-group 1 mode on
+ESW1(config-if-range)# exit
 
-![TOPOLOGY1](image/result3.PNG)
+ESW1(config)# interface port-channel 1
+ESW1(config-if)# switchport mode trunk
+ESW1(config-if)# switchport trunk allowed vlan all
+ESW1(config-if)# switchport trunk native vlan 90
+ESW1(config-if)# exit
 
-Verifiez pour les autres liens etherchannel , rassurez que la sortie est conforme a la table en dessus.
+ESW1(config)# interface range fastEthernet 1/7 - 8
+ESW1(config-if-range)# no shutdown
+ESW1(config-if-range)# end
+```
 
-### Configuration du spanning tree protocole 
+Répétez cette procédure pour les autres port-channels en adaptant les paramètres selon votre table.
 
-L'objectif cest que notre switch de L3 face du routage e=intervlan , il doit donc etre le root pour tout les vlans 
+#### Vérification
 
-#### Verifions si il est root ou pas 
+```
+ESW1# show etherchannel summary
+```
 
-OUvrez le ter inal de ESW# , entrez la commande :
+![Result EtherChannel](image/result3.PNG)
 
-show spanning-tree brief
+---
 
-Observez , votre switch ESW3 doit etre root dans tout les vlans . Si c'est le cas vous n'avez rien a faire , sinon entrez cette commande , ca va faire de lui le root bridge pour le vlan x
+### Configuration du Spanning Tree Protocol (STP)
 
-spanning-tree vlan 10 priority 4096
+L'objectif est que **ESW3** (le switch de niveau 3) soit le **Root Bridge** pour tous les VLANs, afin de maîtriser le chemin du trafic réseau.
 
-Dans cette exemple il est le root bridge [pour le vlan 10 . Vous n'avez plus qu'a iterer pour quil soit le root bridge dans tout les autres vlans.
+#### 1. Vérification du Root Bridge actuel
 
-### Verifications du spanning  
+```
+ESW3# show spanning-tree brief
+```
 
-show spanning-tree brief
+Observez la sortie : ESW3 doit apparaître comme Root Bridge pour tous les VLANs.
 
-Vous pouvez retapez cette commande pour verifier le spanning tree , et ci tout est bien configure alors ESW3 est le root bridge et la liason entre ESW1 et ESW2 est bloquez , vous pouvez verifiez cette informations dans les les commandes de verifications du spanning tree.
+#### 2. Si ESW3 n'est pas Root Bridge — Forcer la priorité
 
-### Isolation des ports
+```
+ESW3(config)# spanning-tree vlan 10 priority 4096
+ESW3(config)# spanning-tree vlan 20 priority 4096
+ESW3(config)# spanning-tree vlan 30 priority 4096
+ESW3(config)# spanning-tree vlan 40 priority 4096
+ESW3(config)# spanning-tree vlan 50 priority 4096
+ESW3(config)# spanning-tree vlan 90 priority 4096
+```
 
-Par mesure de securite l'on va mettre les ports non utilise dans le vlan inutilise notamment le vla poubelle , plutot originale comme nom :)
+#### 3. Vérification finale du STP
 
-Repertorie les ports non utilise ( attention puisque l'on utilise un routeur avec un module switch les port fa0/x sont des ports de routeur et non des ports de commutateur donc on peut lesignorer)
+```
+ESW3# show spanning-tree brief
+```
 
-Rerpertorier les ports commutauer non tuilise puis les agffecter auxx vlans inutilise
+> 💡 Si la configuration est correcte, ESW3 est Root Bridge et le lien entre ESW1 et ESW2 apparaît en état **BLK (Blocked)** — c'est le comportement attendu du STP pour éviter les boucles.
 
-conf t
-int range fa1/x - y
-shutdown
-switchport mode access
-switchport acces vlan 99
+---
 
-A la fin vous avez une sortie de ce type 
+### 🔒 Isolation des ports non utilisés
 
-Sortie de ESW1
+Par mesure de sécurité, les ports inutilisés sont affectés au **VLAN 99 (Poubelle)** et désactivés.
 
-![TOPOLOGY1](image/result4.PNG)
+> ⚠️ **Rappel** : Sur un routeur avec module NM-16ESW, les ports `Fa0/x` sont des ports **routeur** — ne les touchez pas. Seuls les ports `Fa1/x` sont des ports **commutateur**.
 
-**N'oubliez de faire ectte mesure de securite  pour le switch ESW4 ;)**
+```
+ESW1(config)# interface range fastEthernet 1/*** - ***
+ESW1(config-if-range)# shutdown
+ESW1(config-if-range)# switchport mode access
+ESW1(config-if-range)# switchport access vlan 99
+ESW1(config-if-range)# end
+```
 
-# Configuration du rooutage intervlan
+Résultat attendu :
 
-La methode de routage par le switch de niveau trpoios est prefere ici car cest celle qui est utilise dans la plus part des entreprise , en effet le routage on stick a une limte de 50 vlans , ce qui peut tres vitent etre atteint.
+![Result Ports](image/result4.PNG)
 
-# Tableau de vlans
+> ⚠️ **N'oubliez pas d'appliquer cette mesure de sécurité sur ESW4,ESW2,ESW3 également !**
 
-Selon la table de vlan ci dessus nous allons creer les interfaces virtuelles de notre switch de niveau 3 . Vous remarquerez que il n y a pas d'interface de svi qui correspond a la dmz tout simplemet parce que la dmz etant sur un autre sous reseaule trafic pour la dmz va etre achemiimne vers le firewall tout simplement a l'aide de la route par defaut .
+---
 
-Commande a taper pour le vlan 10
+## 🚦 Configuration du Routage inter-VLAN
 
-int vlan 10
-description Gateway vlan 10
-ip add 192.168.10.1 255.255.255.0
-no shutdown
-exit
+Le routage inter-VLAN par **switch de niveau 3** est la méthode privilégiée en entreprise. Contrairement au routage on-stick (limité à ~50 VLANs), cette approche est plus scalable et plus performante.
 
-Faire de meme pour le reste de vlan , qui figurent dans le tableau ci dessus 
+### Table d'adressage des interfaces VLAN (SVI)
 
-Ensuite dans le mode de config globale active le routage avec :
++-----------+-----------+--------------------+--------------------+
+| VLAN NAME | VLAN ID   | RÉSEAU             | IP SVI ESW3        |
++-----------+-----------+--------------------+--------------------+
+| USERS     | 10        | 192.168.10.0/24    | 192.168.10.1       |
+| ADMIN     | 20        | 192.168.20.0/24    | 192.168.20.1       |
+| SERVERS   | 30        | 192.168.30.0/24    | 192.168.30.1       |
+| MGMT      | 50        | 192.168.50.0/24    | 192.168.50.1       |
++-----------+-----------+--------------------+--------------------+
 
-ip routing 
+> 💡 **Pourquoi pas de SVI pour le VLAN 40 (DMZ) ?** La DMZ est sur un sous-réseau distinct géré par le pare-feu FortiGate. Le trafic vers la DMZ sera acheminé via la route par défaut vers le firewall.
 
-# Verification 
+---
 
-Entrez :
-show ip int brief | section Vlan
+### Création des interfaces VLAN (SVI) sur ESW3
 
-Vous devez avoir cette sortie 
+```
+ESW3(config)# interface vlan 10
+ESW3(config-if)# description Gateway VLAN 10 - Users
+ESW3(config-if)# ip address 192.168.10.1 255.255.255.0
+ESW3(config-if)# no shutdown
+ESW3(config-if)# exit
 
-![TOPOLOGY1](image/result5.PNG)
+ESW3(config)# interface vlan 20
+ESW3(config-if)# description Gateway VLAN 20 - Admin
+ESW3(config-if)# ip address 192.168.20.1 255.255.255.0
+ESW3(config-if)# no shutdown
+ESW3(config-if)# exit
 
-Faut pas faire attention a la ligne vlan40 , jai fait une petite erreur hihiii
+ESW3(config)# interface vlan 30
+ESW3(config-if)# description Gateway VLAN 30 - Servers
+ESW3(config-if)# ip address 192.168.30.1 255.255.255.0
+ESW3(config-if)# no shutdown
+ESW3(config-if)# exit
+```
 
-Maintenant l'on va verifier la table de routage
+Répétez pour les autres VLANs selon votre table d'adressage.
 
-entrer :
+### Activation du routage IP
 
-show ip route
+```
+ESW3(config)# ip routing
+ESW3(config)# end
+```
 
-on a cette sortie
+### Vérification
 
-![TOPOLOGY1](image/result6.PNG)
+```
+ESW3# show ip interface brief | section Vlan
+```
 
-On peut remarquet que il n y a pas de route vers le reseau dmz cest problematique , car ce reseau va herberger nois services web et dns et il faudra bien que nos hotes de notre sous reseau communiquent avec eux . Pour ce faire on va donc ajouter une route par defaut qui va rediger tout les pquets "hors vlan" de notre sous reseauvers le firewall
+![Result Interfaces](image/result5.PNG)
 
-## Configuration de linterface connecte au firewall et de la route par defaut
+```
+ESW3# show ip route
+```
 
-Table d'adressage sous reseaux wan 1
+![Result Routing](image/result6.PNG)
 
+> 💡 **Vous remarquerez qu'il n'y a pas de route vers le réseau DMZ** — c'est normal ! Ce réseau héberge les services web et DNS, et le trafic sera redirigé vers le firewall via la route par défaut.
 
-dans Esw3 entrz 
+---
 
-conf t
-int fa0/0
-ip add 10.0.0.1 255.255.255.0
-no shutdown
-exit
-ip route 0.0.0.0 0.0.0.0 fa0/0
+### Configuration de l'interface vers le FireWall et de la route par défaut
 
-Reverifions la table de routage 
+#### Table d'adressage WAN
 
-![TOPOLOGY1](image/result6.PNG)
+# 🌐 Tableau des adresses WAN (ESW3 ↔ Firewall)
 
-Parfait il ne nous reste plus qu'a configurer le firewall pour router les paquets vers la DMZ >Mais avant ca reverifions notre reseaux avec quelques
++----------------------+------------------+------------------+
+| Équipement           | Interface        | Adresse IP       |
++----------------------+------------------+------------------+
+| ESW3 (Switch L3)     | fa0/0            | 10.0.0.1/24      |
+| Firewall FortiGate   | port2            | 10.0.0.2/24      |
++----------------------+------------------+------------------+
 
 
-# Test
+```
+ESW3(config)# interface fastEthernet 0/0
+ESW3(config-if)# ip address 10.0.0.1 255.255.255.0
+ESW3(config-if)# no shutdown
+ESW3(config-if)# exit
 
-![TOPOLOGY1](image/result7.PNG)
+ESW3(config)# ip route 0.0.0.0 0.0.0.0 fastEthernet 0/0
+ESW3(config)# end
+```
 
-Ajoutez d'autres machines Alpines Linux dans notre architecture vous pouvez voir j'ai ajoute pc3 et pc4 
-Pc-test3 est connecte au port fa1/3 de notre ESW1 et il a pour ip 192.168.20.10
-Pc-test4 est connecte au port fa1/1 de notre ESW2 et il a pour ip 192.168.30.10
+Vérification de la table de routage :
 
-Sur chaque machine ajoutez la gateway , sinon pas de routage.
-Voici la commande : ip route add default via 192.168.x.1 
-Avex x , l'id du vlan
+```
+ESW3# show ip route
+```
 
-Reffectuez de pings entre les machines .Si tout est bien configure vos ping devraient passer
+![Result Routing Final](image/result6.PNG)
 
-![TOPOLOGY1](image/result8.PNG)
+---
 
-Dans mon exmeple je ping PC-test3 et Pc-test4.
+## ✅ Test 2 — Connectivité inter-VLAN
 
+![Topology Test 2](image/result7.PNG)
 
+Ajoutez deux nouvelles machines Alpine Linux dans la topologie :
 
+#### Configuration de l'adressage et de la passerelle
 
+Sur chaque machine, configurez l'adresse IP et ajoutez la route par défaut :
 
+```bash
+# Exemple pour PC-test3 (VLAN 20)
+ip addr add 192.168.20.10/24 dev eth0
+ip route add default via 192.168.20.1
 
+# Exemple pour PC-test4 (VLAN 30)
+ip addr add 192.168.30.10/24 dev eth0
+ip route add default via 192.168.30.1
+```
 
+#### Test de connectivité inter-VLAN
 
+```bash
+ping 192.168.30.10
+```
 
+🎉 **Si tout est bien configuré, le ping inter-VLAN doit passer !**
 
+![Result Ping](image/result8.PNG)
 
+---
 
+## 🔥 Configuration du Pare-feu FortiGate
 
+Accédez à l'interface web de FortiGate via son adresse IP de management en HTTPS :
 
 
+![FortiGate Login](image/forti1.PNG)
 
+Rendez-vous dans **Network > Interfaces** et configurez les interfaces selon votre table d'adressage :
 
+![FortiGate Config Port2](image/forti2.PNG)
+![FortiGate Config Port3](image/forti3.PNG)
 
 
-
-
+*Lab réalisé sur GNS3 avec routeurs Cisco équipés du module NM-16ESW et pare-feu FortiGate.*
