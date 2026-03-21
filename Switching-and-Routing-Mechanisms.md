@@ -6,6 +6,7 @@ Pour realiser notre reseaqu nous allons d'abord configurer le traffic de donnes 
 entre eux.Pour se rapprocher d'une architecture de type entreprise , il y a des boucles reseaux et des liens etherchannel afin doptimiser le flux , le routage intervaln est prefere a celui du routage on stick , 
 grace a sa capacite de routage plus efficace.
 
+# Table des vlans
 
 # Configuration des vlans
 
@@ -44,13 +45,112 @@ end
 
 show vlan-switch brief
 
-## Configuration du Switch ESW2
+## Configuration du Switch ESW2 et ESW4
 
 Repetez la meme procedure selon la table de vlan
 
 ## Configuration du Switch ESW3
 
 Creez juste les vlans 
+
+# Test 
+
+A ce stade les utilisateur du meme vlan doivent pouvoir communiquer 
+Ajouter deux machines alpines linux dans l4espace de travail
+Connecter les machines aux switch de facon a ce que les machines elles soient sur le meme vlans 
+
+![TOPOLOGY1](image/topology1.PNG)
+
+PC-test1 et pc-test 2 sont connecte chacun a  fa1/1 et fa1/2 de ESW1
+Demarrez les machines et lances le terminal
+
+## Configurez l'addressage
+
+Sur la PC-test1 , tapez 
+ip addr add 192.168.10.10/24 dev eth0
+ip a
+
+Remarquez que votre machine a bien une ip
+
+![TOPOLOGY1](image/rseult1.PNG)
+
+Faites la meme chose pour PC-test2 mais avec l'adresse 192.168.10.11/24
+
+Effectuez un ping sur l'une des machines pour tester la connectivite 
+CA PING!!!!!!!!!!!!!!!!!!!!
+
+![TOPOLOGY1](image/rseult2.PNG)
+
+# Configuration de Etherchannel et du STP
+
+Maintenant l'on va configurer les liens etherchanell de notre reseau m, les liens etherchannel permettent doptimiser lutilisation des cables reseaux , ce qui va nous permettre davoir deux liens de 100mb ce qui est differnet attention de un lien de 200mb . 
+
+## Table des etherchannels 
+
+Attention pour eviter les erreurs veuyilles shutdown les ports que vous utilise lors de la creation des etherchannel puis les reallumez seulemtn a la fin 
+
+### Configuration du port channel 1
+
+Conformement a la table voici les commandes a entrer sur ESW1 dans le mode de configuration globale  enfin de configurer le port-channel group 1
+
+int range fa1/7 - 8
+switchport
+shutdown
+channel-group 1 mode on
+exit
+int port-channel 1
+switchport mode trunk
+switchport trunk allowed vlan all
+switchport trunk native vlan 90 
+exit
+int range fa1/7 -  8
+no shutdown 
+
+Pour configurer les aiutres ports channels la procedure reste la meme , il n y aque les parametre qui changent , faites attention a bien respecter les valeurs
+qui sont indiquer dans le tableaux sinon vous pouvez avoir des erreurs .
+
+### Verification de l'etherchannel 
+
+Pour verifier etherchannel tapez la commande 
+
+show etherchannel summary
+
+Exemple de sortie pour ESW1
+
+![TOPOLOGY1](image/rseult2.PNG)
+
+Verifiez pour les autres liens etherchannel , rassurez que la sortie est conforme a la table en dessus.
+
+### Configuration du spanning tree protocole 
+
+L'objectif cest que notre switch de L3 face du routage e=intervlan , il doit donc etre le root pour tout les vlans 
+
+#### Verifions si il est root ou pas 
+
+OUvrez le ter inal de ESW# , entrez la commande :
+
+show spanning-tree brief
+
+Observez , votre switch ESW3 doit etre root dans tout les vlans . Si c'est le cas vous n'avez rien a faire , sinon entrez cette commande , ca va faire de lui le root bridge pour le vlan x
+
+spanning-tree vlan 10 priority 4096
+
+Dans cette exemple il est le root bridge [pour le vlan 10 . Vous n'avez plus qu'a iterer pour quil soit le root bridge dans tout les autres vlans.
+
+### Verifications du spanning  
+
+show spanning-tree brief
+
+Vous pouvez retapez cette commande pour verifier le spanning tree , et ci tout est bien configure alors ESW3 est le root bridge et la liason entre ESW1 et ESW2 est bloquez , vous pouvez verifiez cette informations dans les les commandes de verifications du spanning tree.
+
+
+
+
+
+
+
+
+
 
 
 
