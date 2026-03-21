@@ -1,4 +1,4 @@
-![TOPOLOGY1](Entreprise-network-lab/topology1.PNG)
+![TOPOLOGY1](topology1.PNG)
 
 # Description
 
@@ -7,11 +7,11 @@ entre eux.Pour se rapprocher d'une architecture de type entreprise , il y a des 
 grace a sa capacite de routage plus efficace.
 
 
-#Configuration des vlans
+# Configuration des vlans
 
-##Configuration du Switch ESW1
+## Configuration du Switch ESW1
 
-###Creation des Vlans 
+### Creation des Vlans 
 Vu que c'est un routeur avec un module de commutateur lesw commandes sont un peu differentes.
 Sur la ligne de commande entrer :
 
@@ -25,11 +25,11 @@ vlan 90 name Natif
 vlan 99 name Poubelle
 end
 
-###Verification de la creation des vlan
+### Verification de la creation des vlan
 
 show vlan-switch brief
 
-###Affectation des interfaces aux vlans
+### Affectation des interfaces aux vlans
 
 conf t
 int range fa1/1 - 2
@@ -40,15 +40,15 @@ switchport mode access
 switchport access vlan 20
 end
 
-###Verification de l'affectation des interfaces
+### Verification de l'affectation des interfaces
 
 show vlan-switch brief
 
-##Configuration du Switch ESW2
+## Configuration du Switch ESW2
 
 Repetez la meme procedure selon la table de vlan
 
-##Configuration du Switch ESW3
+## Configuration du Switch ESW3
 
 Creez juste les vlans 
 
