@@ -34,17 +34,16 @@ Pour se rapprocher d'une architecture de type entreprise :
 
 # 🗂️ Résumé VLAN / Interfaces par Switch (sans SVI)
 
-+--------+---------------------------+---------------------------+------------------------------+------------------------------+
-| VLAN   | ESW1                     | ESW2                     | ESW4                        | ESW3                         |
-+--------+---------------------------+---------------------------+------------------------------+------------------------------+
-| 10     | FA1/1, FA1/2             | —                         | —                            | —                            |
-| 20     | FA1/3, FA1/4             | —                         | —                            | —                            |
-| 30     | —                         | FA1/1–4                   | —                            | —                            |
-| 40     | —                         | —                         | FA1/1–4                      | —                            |
-| 50     | —                         | —                         | —                            | —                            |
-| 90     | —                         | —                         | —                            | —                            |
-| 99     | Ports inutilisés         | Ports inutilisés         | Ports inutilisés             | Ports inutilisés             |
-+--------+---------------------------+---------------------------+------------------------------+------------------------------+
+| VLAN | ESW1           | ESW2        | ESW4        | ESW3 |
+|------|----------------|-------------|-------------|------|
+| 10   | FA1/1, FA1/2   | —           | —           | —    |
+| 20   | FA1/3, FA1/4   | —           | —           | —    |
+| 30   | —              | FA1/1–4     | —           | —    |
+| 40   | —              | —           | FA1/1–4     | —    |
+| 50   | —              | —           | —           | —    |
+| 90   | —              | —           | —           | —    |
+| 99   | —              | —           | —           | —    |
+
 
 ---
 
@@ -163,16 +162,12 @@ Les liens EtherChannel permettent d'**agréger plusieurs liens physiques** pour 
 
 ### Table des EtherChannels
 
-+----------------------+---------------------------+-------------------------------------------+
-| Port-Channel (ID)    | Switches concernés        | Interfaces utilisées                      |
-+----------------------+---------------------------+-------------------------------------------+
-| Port-Channel 1       | ESW1 ↔ ESW2               | ESW1: fa1/7–fa1/8   | ESW2: fa1/7–fa1/8   |
-|                      |                           | 
-+----------------------+---------------------------+-------------------------------------------+
-| Port-Channel 2       | ESW1 ↔ ESW3               | ESW1: fa1/5–fa1/6   | ESW3: fa1/5–fa1/6   |
-+----------------------+---------------------------+-------------------------------------------+
-| Port-Channel 3       | ESW2 ↔ ESW3               | ESW2: fa1/5–fa1/6   | ESW3: fa1/7–fa1/8   |
-+----------------------+---------------------------+-------------------------------------------+
+| Port-Channel | Switches concernés | Interfaces utilisées |
+|--------------|--------------------|-----------------------|
+| 1            | ESW1 ↔ ESW2        | ESW1: fa1/7–fa1/8 • ESW2: fa1/7–fa1/8 |
+| 2            | ESW1 ↔ ESW3        | ESW1: fa1/5–fa1/6 • ESW3: fa1/5–fa1/6 |
+| 3            | ESW2 ↔ ESW3        | ESW2: fa1/5–fa1/6 • ESW3: fa1/7–fa1/8 |
+
 
 
 > ⚠️ **Attention** : Avant de créer les EtherChannels, **shutdown les ports concernés**, puis rallumez-les uniquement à la fin de la configuration.
@@ -272,14 +267,13 @@ Le routage inter-VLAN par **switch de niveau 3** est la méthode privilégiée e
 
 ### Table d'adressage des interfaces VLAN (SVI)
 
-+-----------+-----------+--------------------+--------------------+
-| VLAN NAME | VLAN ID   | RÉSEAU             | IP SVI ESW3        |
-+-----------+-----------+--------------------+--------------------+
-| USERS     | 10        | 192.168.10.0/24    | 192.168.10.1       |
-| ADMIN     | 20        | 192.168.20.0/24    | 192.168.20.1       |
-| SERVERS   | 30        | 192.168.30.0/24    | 192.168.30.1       |
-| MGMT      | 50        | 192.168.50.0/24    | 192.168.50.1       |
-+-----------+-----------+--------------------+--------------------+
+| VLAN NAME | VLAN ID | RÉSEAU           | IP SVI ESW3     |
+|-----------|---------|------------------|------------------|
+| USERS     | 10      | 192.168.10.0/24  | 192.168.10.1     |
+| ADMIN     | 20      | 192.168.20.0/24  | 192.168.20.1     |
+| SERVERS   | 30      | 192.168.30.0/24  | 192.168.30.1     |
+| MGMT      | 50      | 192.168.50.0/24  | 192.168.50.1     |
+
 
 > 💡 **Pourquoi pas de SVI pour le VLAN 40 (DMZ) ?** La DMZ est sur un sous-réseau distinct géré par le pare-feu FortiGate. Le trafic vers la DMZ sera acheminé via la route par défaut vers le firewall.
 
@@ -340,12 +334,10 @@ ESW3# show ip route
 
 # 🌐 Tableau des adresses WAN (ESW3 ↔ Firewall)
 
-+----------------------+------------------+------------------+
-| Équipement           | Interface        | Adresse IP       |
-+----------------------+------------------+------------------+
-| ESW3 (Switch L3)     | fa0/0            | 10.0.0.1/24      |
-| Firewall FortiGate   | port2            | 10.0.0.2/24      |
-+----------------------+------------------+------------------+
+| Équipement         | Interface | Adresse IP   |
+|--------------------|-----------|--------------|
+| ESW3 (Switch L3)   | fa0/0     | 10.0.0.1/24  |
+| Firewall FortiGate | port2     | 10.0.0.2/24  |
 
 
 ```
