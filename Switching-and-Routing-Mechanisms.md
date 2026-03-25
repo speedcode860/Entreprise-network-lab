@@ -13,9 +13,11 @@
 - [Test 1 — Connectivité intra-VLAN](#-test-1--connectivité-dans-le-même-vlan)
 - [Configuration EtherChannel & STP](#-configuration-etherchannel--stp)
 - [Routage inter-VLAN](#-configuration-du-routage-inter-vlan)
+- [Test 2 — Connectivité inter-VLAN](#-test-2--connectivité-inter-vlan)
 - [Configuration pfSense](#-configuration-du-pare-feu-pfsense)
 - [Test final](#-test-final--ping-entre-vlans-via-pfsense)
 - [Configuration de base & SSH](#️-configuration-de-base--ssh)
+- [Commandes utiles](#-récapitulatif-des-commandes-utiles)
 
 ---
 
@@ -24,6 +26,7 @@
 Pour réaliser ce réseau, nous allons configurer le trafic de données et nous assurer que tous les sous-réseaux peuvent communiquer entre eux.
 
 Pour se rapprocher d'une architecture de type entreprise :
+
 - 🔁 Des **boucles réseau** sont présentes et gérées par le Spanning Tree Protocol (STP)
 - 🔗 Des **liens EtherChannel** optimisent le flux réseau et assurent la redondance
 - 🚦 Le **routage inter-VLAN par switch de niveau 3** est préféré au routage on-stick, plus scalable et plus performant en entreprise
@@ -146,10 +149,12 @@ ESW3(vlan)# exit
 
 ![Topology Test](image/topology2.PNG)
 
-- **PC-test1** → connecté à `Fa1/1` de ESW1 (VLAN 10)
-- **PC-test2** → connecté à `Fa1/2` de ESW1 (VLAN 10)
+| Machine | Interface | VLAN |
+|---------|-----------|------|
+| PC-test1 | Fa1/1 de ESW1 | VLAN 10 |
+| PC-test2 | Fa1/2 de ESW1 | VLAN 10 |
 
-#### Configuration de l'adressage sur PC-test1
+#### Configuration de PC-test1
 
 ```bash
 ip addr add 192.168.10.10/24 dev eth0
@@ -158,7 +163,7 @@ ip a
 
 ![Result 1](image/result1.PNG)
 
-#### Configuration de l'adressage sur PC-test2
+#### Configuration de PC-test2
 
 ```bash
 ip addr add 192.168.10.11/24 dev eth0
@@ -285,8 +290,6 @@ ESW1(config-if-range)# switchport access vlan 99
 ESW1(config-if-range)# end
 ```
 
-Résultat attendu :
-
 ![Result Ports](image/result4.PNG)
 
 > ⚠️ **Appliquez cette mesure sur ESW1, ESW2, ESW3 et ESW4 !**
@@ -387,8 +390,6 @@ ESW3(config)# end
 ```
 
 > ⚠️ **Note** : Dans la capture ci-dessous, vous pouvez voir `fastEthernet 0/0` au lieu de `10.0.0.2` comme next-hop dans la route par défaut — c'est une erreur de saisie lors du lab. Assurez-vous bien d'utiliser l'adresse IP `10.0.0.2` comme indiqué dans la commande ci-dessus.
-
-Vérification de la table de routage :
 
 ```
 ESW3# show ip route
@@ -550,7 +551,94 @@ Ici, le ping de **PC-test3 → PC-test5** (DMZ) fonctionne parfaitement :
 
 Maintenant que la connectivité de bout en bout est établie, nous allons appliquer les **configurations de base** sur chaque switch et **activer SSH** pour un accès sécurisé à distance.
 
-> 🚧 **Section à venir** — Configuration du hostname, bannière, mot de passe enable, et activation de SSH sur ESW1, ESW2, ESW3 et ESW4.
+### Configuration de base — Exemple sur ESW1
+
+```
+hostname USER_ACCESS
+enable secret Cisco123
+line console 0
+password Cisco123
+service password-encryption
+banner motd #
+Unauthorized access is prohibited
+#
+```
+
+Les mêmes opérations sont à répéter sur les autres switches, avec les hostnames suivants :
+
+| Switch | Hostname |
+|--------|----------|
+| ESW1 | `USER_ACCESS` |
+| ESW2 | `SERVER_ACCESS` |
+| ESW3 | `CORE_SWITCH` |
+| ESW4 | `DMZ_ACCESS` |
+
+> ⚠️ Malheureusement, ce modèle ne supporte pas l'authentification console complète, mais les commandes valent quand même la peine d'être appliquées.
+
+---
+
+### Adressage des switches (VLAN 50 — MGMT)
+
+Avant de configurer SSH, assignez une adresse IP à chaque switch selon la table suivante :
+
+| Switch | Adresse IP de gestion |
+|--------|-----------------------|
+| USER_ACCESS (ESW1) | 192.168.50.10 |
+| SERVER_ACCESS (ESW2) | 192.168.50.11 |
+| CORE_SWITCH (ESW3) | 192.168.50.1 |
+| DMZ_ACCESS (ESW4) | 192.168.40.2 |
+
+> 💡 ESW4 est dans le même réseau que les machines de la DMZ.
+
+**Exemple de configuration pour ESW1 :**
+
+```
+conf t
+interface vlan 50
+ ip address 192.168.50.10 255.255.255.0
+ no shutdown
+exit
+ip default-gateway 192.168.50.1
+```
+
+---
+
+### Configuration SSH
+
+À appliquer sur **tous les switches** :
+
+```
+ip domain name homelab.com
+crypto key generate rsa general-keys modulus 1024
+username admin secret admin
+line vty 0 15
+ login local
+ no transport input
+ transport input ssh
+exit
+```
+
+---
+
+### 💾 Sauvegarde de la configuration
+
+N'oubliez pas de sauvegarder sur chaque switch :
+
+```
+copy running-config startup-config
+```
+
+---
+
+### Test de l'accès SSH
+
+Pour tester, on se connecte de switch en switch depuis `USER_ACCESS`. Les clients SSH n'étant pas encore installés sur les PC utilisateurs, on utilise directement le switch comme point d'origine — ce qui est plutôt fun !
+
+![SSH Test](image/result11.PNG)
+
+On peut voir sur le screen comment se connecter de switch en switch par SSH. C'est plutôt fun 😄
+
+Voilà, cette partie est terminée. On passe maintenant à la suite pour le déploiement du système d'administration — j'espère que vous avez apprécié, ciao !
 
 ---
 
