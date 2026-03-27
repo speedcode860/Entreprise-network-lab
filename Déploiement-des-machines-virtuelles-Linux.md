@@ -59,10 +59,32 @@ Pour adresser les machines, connectez-vous à la console et éditez les fichiers
 ## 🔐 Configuration SSH & compte admin
 
 Une fois les machines adressées, on configure SSH et on crée un compte administrateur sur chacune d'elles.
+Pour mettre les machines a jour et updae les packges regarder le fihier set up lab
 
 ---
 
+D'abord un met les hostname
+
 ### 🐧 Alpine Linux
+Configuration du hostname
+
+exemple :
+
+echo "srv-dhcp" > /etc/hostname
+hostname -F /etc/hostname 
+
+
+### 🐧 Ubuntu
+Configuration du hostname
+
+exemple :
+
+hostnamectl set-hostname nom-de-ta-machine
+
+#### Rocky
+
+hostnamectl set-hostname nom-de-ta-machine
+
 
 #### Installation de SSH
 
@@ -72,6 +94,8 @@ apk add openssh
 rc-update add sshd default
 service sshd start
 ```
+
+`
 
 
 
