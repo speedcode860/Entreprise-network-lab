@@ -87,13 +87,52 @@ hostnamectl set-hostname nom-de-ta-machine
 
 
 #### Installation de SSH
+Apres avoir installe ssh selon les differnets machine et os voici les commandes pour les configurer :
 
-```bash
-apk update
-apk add openssh
-rc-update add sshd default
-service sshd start
-```
+PARTIE-SERVEUR
+
+Rocky Linux : sudo systemctl enable --now sshd
+Alpine Linux : sudo rc-service sshd start
+
+Bien sur on ne configure ssh que sur les machines serveur
+
+Maintenant on cree le user admin
+sudo adduser admin
+sudo passwd admin
+
+On 'lajoute au group wheel
+
+Rocky:sudo usermod -aG wheel admin
+Alpine : sudo addgroup admin wheel
+
+Ensuite on ouvre le fichier suo avec  : visudo 
+. Puis on decomenete la ligne 
+%wheel ALL=(ALL) ALL
+
+Puis creer les fichiers de config ssh
+
+Pour l'instant on va d'abord creeer les fichiers et ajouter les cles plus tard :
+
+sudo mkdir -p /home/admin/.ssh
+sudo vi /home/admin/.ssh/authorized_keys
+
+Quand l'editeur nano s'ouvre refeermez le tout simplement
+
+Maintenant rendons sur les machines clients cest a dire admin et admin-gui pour generer les cles ssh
+
+ssh-keygen -t ed25519 -C "admin@homelab"
+
+Copiez la cle qui se trouve dans 
+~/.ssh/id_ed25519.pub
+
+
+
+
+
+
+
+
+
 
 `
 
