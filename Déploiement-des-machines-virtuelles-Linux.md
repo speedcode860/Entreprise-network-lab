@@ -73,59 +73,7 @@ rc-update add sshd default
 service sshd start
 ```
 
-#### Création du compte admin
 
-```bash
-adduser admin
-```
-
-> Suivez les instructions pour définir le mot de passe.
-
-Ajoutez l'utilisateur au groupe `wheel` pour les droits sudo :
-
-```bash
-apk add sudo
-adduser admin wheel
-echo '%wheel ALL=(ALL) ALL' >> /etc/sudoers
-```
-
----
-
-### 🐧 Ubuntu 22.04
-
-#### SSH est installé par défaut — vérifiez son état
-
-```bash
-sudo systemctl enable ssh
-sudo systemctl start ssh
-```
-
-#### Création du compte admin
-
-```bash
-sudo adduser admin
-sudo usermod -aG sudo admin
-```
-
----
-
-### 🐧 Rocky Linux
-
-#### Installation de SSH
-
-```bash
-sudo dnf install -y openssh-server
-sudo systemctl enable sshd
-sudo systemctl start sshd
-```
-
-#### Création du compte admin
-
-```bash
-sudo useradd -m admin
-sudo passwd admin
-sudo usermod -aG wheel admin
-```
 
 ---
 
