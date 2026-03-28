@@ -113,7 +113,40 @@ Vérifier le statut :
 rc-service kea-dhcp4 status
 
 
+Maintenant conectons nous au switch core en ssh , vous aurez quelues problemes de compatibilite mais ca se regle vite avec les bons parametres 
+
+Pour ma part voila la commde que jai eu a utiliser : ssh -o KexAlgorithms=+diffie-hellman-group1-sha1 -o HostKeyAlgorithms=+ssh-rsa -c aes128-cbc admin@192.168.50.1
+
+Ensuite on doit definilir le relais dhycp pour le vlan 10 
+
 MAintenant que cest bon il faut configurer le relais dhcp pour que notre switch core envoit les request dhcp a notre serveur 
 
-Comnectez vous au swicth en ssh 
+configure terminal
+interface vlan 10
+ip helper-address 192.168.30.10
+exit
+service dhcp
+exit
+copy running-config startup-config 
+
+Cela etant fait on peut configurer nos machines user a utiliser dhcp 
+
+OUvrez le fichier /etc/network/interfaces et votre fichier doit ressembler a pour eth0
+
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+Il s'agit juste de decomenter la ligne qui nous interesse 
+
+ensuite on realnce ler service reseau
+rc-service networking restart
+
+Et tandann
+
+On peut remarquer que l'on recoit bien une ip du serveur
+
+et le ping qui march parfaitenmet
 
