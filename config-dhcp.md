@@ -1,152 +1,210 @@
-Configuration dhcp
+# 📡 Configuration du service DHCP — Kea
 
-Maintenant que nos serveurs sont pret a etre adminstres on va commencer par configurer le service dhvp pour que nos machines utilisateur recoivent leurs ip 
-Voila les information sur le pool dhcp
+> Mise en place du service DHCP avec Kea pour l'attribution automatique d'adresses IP aux machines utilisateur.
 
-USERS (10) 192.168.10.100 – .200 192.168.10.1 192.168.30.11 24h
-gateway : 192.168.10.1
-dn: 192.168.40.12 
+![Topology](image/topology5.PNG)
 
-Pour cette config on va utiliser le daemon kea , qui est la version la plus utilise en entreprise et est moderne par rapport a ISC DHCP
-Connectez vous au serveur en ssh:
+---
 
-d'abord installons kea
+## 📋 Informations sur le pool DHCP
 
+| VLAN | Réseau | Plage d'attribution | Gateway | DNS | Durée |
+|------|--------|---------------------|---------|-----|-------|
+| 10 — Users | 192.168.10.0/24 | 192.168.10.50 – .150 | 192.168.10.1 | 192.168.40.12 | 24h |
+
+> 💡 On utilise **Kea DHCP** plutôt qu'ISC DHCP — c'est la solution moderne et la plus répandue en entreprise.
+
+---
+
+## 1. Installation de Kea
+
+Connectez-vous au serveur `srv-dhcp` en SSH, puis installez Kea :
+
+```sh
 apk update
 apk add kea-dhcp4
+```
 
-Apres installation ouvrez le fichier  : /etc/kea/kea-dhcp4.conf
+---
 
-Supprimez tout son contenu pour coller celui ci :
+## 2. Configuration de Kea
 
+Ouvrez le fichier de configuration :
+
+```sh
+vi /etc/kea/kea-dhcp4.conf
+```
+
+Supprimez tout le contenu existant et remplacez-le par la configuration suivante :
+
+```json
 {
-"Dhcp4": {
+  "Dhcp4": {
     "interfaces-config": {
-        "interfaces": ["eth0"] 
+      "interfaces": ["eth0"]
     },
-
     "control-socket": {
-        "socket-type": "unix",
-        "socket-name": "/run/kea/kea-dhcp4-ctrl.sock"
+      "socket-type": "unix",
+      "socket-name": "/run/kea/kea-dhcp4-ctrl.sock"
     },
-
     "lease-database": {
-        "type": "memfile",
-        "persist": true,
-        "name": "/var/lib/kea/kea-leases4.csv",
-        "lfc-interval": 3600
+      "type": "memfile",
+      "persist": true,
+      "name": "/var/lib/kea/kea-leases4.csv",
+      "lfc-interval": 3600
     },
-
     "subnet4": [
-        {
-            "id": 1,
-            "subnet": "192.168.10.0/24",
-            "pools": [ { "pool": "192.168.10.50 - 192.168.10.150" } ],
-            "option-data": [
-                {
-                    "name": "routers",
-                    "data": "192.168.10.1"
-                },
-                {
-                    "name": "domain-name-servers",
-                    "data": "192.168.40.12"
-                }
-            ]
-        }
+      {
+        "id": 1,
+        "subnet": "192.168.10.0/24",
+        "pools": [ { "pool": "192.168.10.50 - 192.168.10.150" } ],
+        "option-data": [
+          {
+            "name": "routers",
+            "data": "192.168.10.1"
+          },
+          {
+            "name": "domain-name-servers",
+            "data": "192.168.40.12"
+          }
+        ]
+      }
     ],
-
     "loggers": [
-    {
+      {
         "name": "kea-dhcp4",
         "output_options": [
-            {
-                "output": "/var/log/kea-dhcp4.log"
-            }
+          {
+            "output": "/var/log/kea-dhcp4.log"
+          }
         ],
         "severity": "INFO"
-    }
+      }
     ]
+  }
 }
-}
+```
 
- rassurez vous de ces autres points : 
+---
 
-Verifiez que le fichier de log existe et que cest kea le proprietaire
+## 3. Vérifications préalables
+
+Avant de démarrer le service, quelques points sont à vérifier.
+
+### Fichier de log
+
+```sh
 ls -l /var/log/kea-dhcp4.log
+```
 
-Si il n'existe pas alors crreons le comme ci :
+S'il n'existe pas, créez-le :
 
+```sh
 touch /var/log/kea-dhcp4.log
 chown kea:kea /var/log/kea-dhcp4.log
 chmod 664 /var/log/kea-dhcp4.log
+```
 
-Verifeiz l'ip statique :
+### IP statique du serveur
 
+```sh
 ip addr show eth0
+```
 
-C'est l'endroit où Kea note les adresses IP qu'il a déjà données.
+### Dossier des leases
 
-Vérifier si le dossier existe :
+C'est ici que Kea enregistre les adresses IP déjà attribuées.
 
+```sh
 ls -ld /var/lib/kea/
+```
 
-Si le dossier n'existe pas :
+S'il n'existe pas, créez-le :
 
+```sh
 mkdir -p /var/lib/kea/
 chown kea:kea /var/lib/kea/
+```
 
-Avant de lancer le service "pour de vrai", Kea possède un outil pour vérifier s'il y a des erreurs de frappe ou des problèmes de droits dans ton fichier JSON :
+### Validation de la configuration
 
+Kea dispose d'un outil intégré pour détecter les erreurs dans le fichier JSON avant le lancement :
+
+```sh
 kea-dhcp4 -t /etc/kea/kea-dhcp4.conf
+```
 
-Lancer Kea au démarrage :
+---
 
-rc-update add kea-dhcp4 default
+## 4. Démarrage du service
 
+```sh
+rc-update add kea-dhcp4 default   # Lancement automatique au démarrage
+rc-service kea-dhcp4 start        # Démarrage immédiat
+rc-service kea-dhcp4 status       # Vérification du statut
+```
 
-Démarrer le service maintenant :
+---
 
-rc-service kea-dhcp4 start
+## 5. Configuration du relais DHCP sur le switch core
 
-Vérifier le statut :
+Les requêtes DHCP des machines du VLAN 10 doivent être relayées vers `srv-dhcp`. Cette configuration se fait sur **CORE_SWITCH (ESW3)**.
 
-rc-service kea-dhcp4 status
+Connectez-vous en SSH — vous pourrez rencontrer des problèmes de compatibilité d'algorithmes, réglables avec les paramètres suivants :
 
+```sh
+ssh -o KexAlgorithms=+diffie-hellman-group1-sha1 \
+    -o HostKeyAlgorithms=+ssh-rsa \
+    -c aes128-cbc \
+    admin@192.168.50.1
+```
 
-Maintenant conectons nous au switch core en ssh , vous aurez quelues problemes de compatibilite mais ca se regle vite avec les bons parametres 
+Puis configurez le relais DHCP sur l'interface VLAN 10 :
 
-Pour ma part voila la commde que jai eu a utiliser : ssh -o KexAlgorithms=+diffie-hellman-group1-sha1 -o HostKeyAlgorithms=+ssh-rsa -c aes128-cbc admin@192.168.50.1
-
-Ensuite on doit definilir le relais dhycp pour le vlan 10 
-
-MAintenant que cest bon il faut configurer le relais dhcp pour que notre switch core envoit les request dhcp a notre serveur 
-
+```
 configure terminal
 interface vlan 10
-ip helper-address 192.168.30.10
+ ip helper-address 192.168.30.10
 exit
 service dhcp
 exit
-copy running-config startup-config 
+copy running-config startup-config
+```
 
-Cela etant fait on peut configurer nos machines user a utiliser dhcp 
+---
 
-OUvrez le fichier /etc/network/interfaces et votre fichier doit ressembler a pour eth0
+## 6. Configuration des machines utilisateur en DHCP
 
+Sur `user1` et `user2`, ouvrez le fichier réseau :
+
+```sh
+vi /etc/network/interfaces
+```
+
+Assurez-vous que la configuration de `eth0` ressemble à ceci — il s'agit souvent de simplement décommenter la bonne ligne :
+
+```
 auto lo
 iface lo inet loopback
 
 auto eth0
 iface eth0 inet dhcp
+```
 
-Il s'agit juste de decomenter la ligne qui nous interesse 
+Redémarrez le service réseau :
 
-ensuite on realnce ler service reseau
+```sh
 rc-service networking restart
+```
 
-Et tandann
+---
 
-On peut remarquer que l'on recoit bien une ip du serveur
+## ✅ Résultat
 
-et le ping qui march parfaitenmet
+Les machines utilisateur reçoivent bien une adresse IP du serveur Kea :
 
+![Attribution IP DHCP](image/result17.PNG)
+
+Et la connectivité réseau est confirmée :
+
+![Ping depuis user1](image/result18.PNG)
