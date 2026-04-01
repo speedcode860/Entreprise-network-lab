@@ -54,3 +54,32 @@ Ce principe est appliqué à travers **trois couches de verrouillage** :
 | DNS-DMZ | SFTP | `/sftp/dns-ext` | DNS Externe (DMZ) | RW — Chrooté |
 
 ![Schéma des partages](image/srv-files.png)
+
+On va commencer par SAMBA
+
+Accedons a linterfacce de srv-files et metons ajour les packages puis installons SAMBA
+
+apk update
+apk add samba samba-common-tools
+
+Ensuite creeons les fichiers qui vont etre partagges
+
+mkdir -p /srv/shares/public
+mkdir -p /srv/shares/admin
+
+Ensuite on cree les groupes:
+
+addgroup smb-users
+addgroup smb-admins
+
+Maintenant on donne le privilige conformemeon a ce que l;on a defini
+
+# Attribution des propriétaires (root est le maître, les groupes ont l'accès)
+chown -R root:smb-users /srv/shares/public
+chown -R root:smb-admins /srv/shares/admin
+
+# Réglage des droits (755 pour public = lecture seule pour le groupe / 770 pour admin = privé)
+chmod 755 /srv/shares/public
+chmod 770 /srv/shares/admin
+
+Maintenant , on va passer au configuration samba
