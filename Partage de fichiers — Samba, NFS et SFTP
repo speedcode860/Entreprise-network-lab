@@ -1,0 +1,43 @@
+Cette partie du projet se concentre sur la mise en place du serveur de fichiers srv-files. Son rôle est de centraliser, sécuriser et distribuer les données à travers toute l'infrastructure via trois services de partage distincts : Samba, NFS et SFTP.
+La sécurité ne repose pas sur la confiance, mais sur le contrôle strict. Nous implémentons le concept de Moindre Privilège.
+
+Qu'est-ce que c'est ?
+Le principe du moindre privilège consiste à n'accorder qu'un accès minimal :
+
+Accès sélectif : Un utilisateur n'accède qu'aux ressources nécessaires à sa mission.
+
+Droits restreints : Si la lecture suffit, l'écriture est interdite.
+
+Isolation : Une faille sur un service ne doit pas compromettre les autres.
+
+Comment on l'implémenter ?
+Nous appliquons cette rigueur via trois couches de verrouillage :
+
+Par la segmentation réseau (VLAN) : * Le flux NFS est réservé au VLAN SERVERS.
+
+Le flux Samba est réservé au VLAN USERS/ADMIN.
+
+Le flux SFTP est l'unique porte d'entrée pour la DMZ.
+
+Par la configuration des services :
+
+Samba : Le dossier public est forcé en Lecture seule pour les utilisateurs.
+
+SFTP : L'utilisateur est enfermé dans une Chroot Jail (prison virtuelle) pour l'empêcher de remonter à la racine du serveur.
+
+Par les permissions système (Linux) :
+
+Utilisation de groupes dédiés (smb-users, smb-admins).
+
+Chaque dossier appartient à un propriétaire précis avec des droits 755 ou 770 pour bloquer les curieux au niveau du disque.
+
+Partage,Protocole,Chemin Local (/srv/),Utilisateurs / Zone,Droits (RW/RO)
+Public,Samba,/shares/public,"USERS, ADMIN",RO (Users) / RW (Admin)
+Admin,Samba,/shares/admin,ADMIN seulement,RW
+Srv-Data,NFS,/nfs/data,SERVERS seulement,RW
+Web-DMZ,SFTP,/sftp/web,Serveur Web (DMZ),RW (Chrooté)
+Proxy-DMZ,SFTP,/sftp/proxy,Reverse Proxy (DMZ),RW (Chrooté)
+DNS-DMZ,SFTP,/sftp/dns-ext,DNS Externe (DMZ),RW (Chrooté)
+
+Si il faut representer ce schema voila une image plus parlante
+
