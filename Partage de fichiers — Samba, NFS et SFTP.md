@@ -53,4 +53,4 @@ Ce principe est appliqué à travers **trois couches de verrouillage** :
 | Proxy-DMZ | SFTP | `/sftp/proxy` | Reverse Proxy (DMZ) | RW — Chrooté |
 | DNS-DMZ | SFTP | `/sftp/dns-ext` | DNS Externe (DMZ) | RW — Chrooté |
 
-![Schéma des partages](image/srv-files.PNG)
+![Schéma des partages](image/srv-files.png)
