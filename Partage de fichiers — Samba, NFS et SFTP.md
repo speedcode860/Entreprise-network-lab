@@ -55,31 +55,124 @@ Ce principe est appliqué à travers **trois couches de verrouillage** :
 
 ![Schéma des partages](image/srv-files.png)
 
-On va commencer par SAMBA
+---
 
-Accedons a linterfacce de srv-files et metons ajour les packages puis installons SAMBA
+## 🗂️ Samba
 
+### 1. Installation
+```sh
 apk update
 apk add samba samba-common-tools
+```
 
-Ensuite creeons les fichiers qui vont etre partagges
-
+### 2. Création des dossiers partagés
+```sh
 mkdir -p /srv/shares/public
 mkdir -p /srv/shares/admin
+```
 
-Ensuite on cree les groupes:
-
+### 3. Création des groupes
+```sh
 addgroup smb-users
 addgroup smb-admins
+```
 
-Maintenant on donne le privilige conformemeon a ce que l;on a defini
-
-# Attribution des propriétaires (root est le maître, les groupes ont l'accès)
+### 4. Attribution des droits
+```sh
+# Root est propriétaire, les groupes ont l'accès
 chown -R root:smb-users /srv/shares/public
 chown -R root:smb-admins /srv/shares/admin
 
-# Réglage des droits (755 pour public = lecture seule pour le groupe / 770 pour admin = privé)
+# 755 = lecture seule pour le groupe / 770 = accès privé
 chmod 755 /srv/shares/public
 chmod 770 /srv/shares/admin
+```
 
-Maintenant , on va passer au configuration samba
+### 5. Configuration de Samba
+
+Videz le fichier `/etc/samba/smb.conf` et collez la configuration suivante :
+```ini
+# =================================================================
+# CONFIGURATION GLOBALE DU SERVEUR
+# =================================================================
+[global]
+   workgroup = WORKGROUP
+   server string = srv-files
+
+   # Force l'authentification par compte utilisateur
+   security = user
+
+   # Les utilisateurs inconnus sont traités comme invités
+   # Indispensable pour que [public] fonctionne sans mot de passe
+   map to guest = Bad User
+
+   log file = /var/log/samba/log.%m
+   max log size = 50
+
+
+# =================================================================
+# PARTAGE PUBLIC — LECTURE SEULE POUR TOUS
+# =================================================================
+[public]
+   path = /srv/shares/public
+   comment = Partage Public
+   browseable = yes
+   read only = yes
+
+   # Exception : les admins peuvent écrire
+   write list = @smb-admins
+
+   # Accès sans mot de passe (mode invité)
+   guest ok = yes
+
+
+# =================================================================
+# PARTAGE ADMIN — ACCÈS PRIVÉ ET CACHÉ
+# =================================================================
+[admin]
+   path = /srv/shares/admin
+   comment = Zone Admin
+
+   # Dossier invisible dans la liste des partages réseau
+   # Il faut taper manuellement \\IP\admin pour y accéder
+   browseable = no
+
+   valid users = @smb-admins
+   writable = yes
+   guest ok = no
+```
+
+### 6. Création des utilisateurs
+```sh
+# Utilisateur standard (VLAN Users)
+adduser -D -H -G smb-users marc
+smbpasswd -a marc
+smbpasswd -e marc
+
+# Utilisateur admin
+adduser -D -H -G smb-admins luc
+smbpasswd -a luc
+smbpasswd -e luc
+```
+
+> 💡 Ajoutez autant d'utilisateurs que nécessaire en suivant le même modèle.
+
+### 7. Démarrage du service
+```sh
+rc-update add samba default   # Lancement automatique au démarrage
+rc-service samba start        # Démarrage immédiat
+```
+
+---
+
+## ✅ Tests
+
+Depuis la machine `admin-gui`, entrez l'adresse du serveur dans la barre d'adresse du gestionnaire de fichiers :
+
+![Accès au partage depuis admin-gui](image/result24.PNG)
+![Authentification Samba](image/result25.PNG)
+
+> 💡 Le partage peut prendre quelques secondes à s'afficher selon les performances de votre machine.
+
+![Partage public](image/result26.PNG)
+![Partage admin](image/result27.PNG)
