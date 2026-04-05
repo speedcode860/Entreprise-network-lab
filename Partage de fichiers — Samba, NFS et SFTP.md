@@ -165,7 +165,7 @@ rc-service samba start        # Démarrage immédiat
 
 ---
 
-## ✅ Tests
+## ✅ Tests Samba
 
 Depuis la machine `admin-gui`, entrez l'adresse du serveur dans la barre d'adresse du gestionnaire de fichiers :
 
@@ -176,3 +176,59 @@ Depuis la machine `admin-gui`, entrez l'adresse du serveur dans la barre d'adres
 
 ![Partage public](image/result26.PNG)
 ![Partage admin](image/result27.PNG)
+
+---
+
+## 📂 NFS
+
+L'objectif ici est de faire utiliser à `srv-dhcp` un dossier distant hébergé sur `srv-files` comme point de stockage pour ses logs Kea.
+
+### Sur srv-files — Préparation du partage
+
+Créez le dossier qui sera exporté et définissez ses permissions :
+```sh
+mkdir -p /srv/nfs/data/dhcp
+chmod -R 770 /srv/nfs/data/dhcp
+chown -R root:root /srv/nfs/data/dhcp
+```
+
+Déclarez ensuite le partage dans `/etc/exports` en autorisant l'accès à l'IP du serveur DHCP :
+```sh
+/srv/nfs/data/dhcp  192.168.30.10(rw,sync,no_root_squash,no_subtree_check)
+```
+
+Appliquez la configuration :
+```sh
+exportfs -ra
+```
+
+### Sur srv-dhcp — Montage du partage
+
+Créez le point de montage local, puis ajoutez l'entrée correspondante dans `/etc/fstab` pour un montage automatique au démarrage :
+```sh
+192.168.30.20:/srv/nfs/data/dhcp  /var/log/kea-remote  nfs  defaults,_netdev,soft  0  0
+```
+
+Montez immédiatement le partage :
+```sh
+mount -a
+```
+
+### Rediriger les logs Kea vers le partage
+
+Éditez la configuration de Kea et modifiez le paramètre `output` dans la section `loggers` pour pointer vers le point de montage :
+```json
+"output": "/var/log/kea-remote"
+```
+
+---
+
+## ✅ Tests NFS
+
+On peut voir que le dossier est bien monté — en créant un fichier dans le point de montage côté `srv-dhcp`, il apparaît instantanément dans le dossier correspondant sur `srv-files` :
+
+![Test montage NFS](image/result28.PNG)
+
+---
+
+> ⚠️ La configuration SFTP (pour les serveurs `srv-web`, `srv-proxy` et `srv-ldap`) est traitée dans les sections dédiées à chacun de ces services — ils n'étaient pas encore configurés au moment de la rédaction de cette partie. Rendez-vous dans leurs sections respectives !
